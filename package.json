@@ -1,0 +1,20 @@
+{
+  "name": "website-automation-tests",
+  "version": "1.0.0",
+  "private": true,
+  "description": "End-to-end automation tests for the website, built on Playwright.",
+  "scripts": {
+    "test": "playwright test",
+    "test:headed": "playwright test --headed",
+    "test:ui": "playwright test --ui",
+    "test:smoke": "playwright test --grep @smoke",
+    "report": "playwright show-report",
+    "codegen": "playwright codegen"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.63.0",
+    "@types/node": "^26.6.3",
+    "dotenv": "^18.0.4",
+    "typescript": "^7.0.2"
+  }
+}
