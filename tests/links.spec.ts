@@ -1,7 +1,7 @@
 import { test, expect } from '@playwright/test';
 
 test('homepage has no broken internal links', async ({ page, request, baseURL }) => {
-  await page.goto('/');
+  await page.goto('/Home.aspx');
 
   const origin = new URL(baseURL!).origin;
   const hrefs = await page

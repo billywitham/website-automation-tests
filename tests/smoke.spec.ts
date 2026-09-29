@@ -1,7 +1,7 @@
 import { test, expect } from '@playwright/test';
 
 // Pages to smoke-test. Add your site's key routes here.
-const pages = ['/'];
+const pages = ['/Home.aspx'];
 
 test.describe('Smoke tests @smoke', () => {
   for (const path of pages) {

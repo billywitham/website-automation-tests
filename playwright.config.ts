@@ -1,7 +1,7 @@
 import { defineConfig, devices } from '@playwright/test';
 import 'dotenv/config';
 
-const baseURL = process.env.BASE_URL ?? 'https://example.com';
+const baseURL = process.env.BASE_URL ?? 'https://pademo.publicaccessnow.com';
 
 export default defineConfig({
   testDir: './tests',
