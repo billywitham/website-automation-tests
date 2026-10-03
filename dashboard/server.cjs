@@ -30,6 +30,10 @@ function discover() {
     } catch (error) { reject(error); } });
   });
 }
+function validateTags(tags = []) {
+  if (!Array.isArray(tags) || tags.length > 20 || tags.some(tag => typeof tag !== 'string' || !tag.trim() || tag.trim().length > 100)) throw new Error('Enter up to 20 non-empty tags, each up to 100 characters.');
+  return [...new Set(tags.map(tag => tag.trim()))];
+}
 function validate(value, catalog) {
   if (!value || typeof value.name !== 'string' || !value.name.trim() || value.name.length > 100) throw new Error('Enter a run name (up to 100 characters).');
   if (!Array.isArray(value.files) || !value.files.length || value.files.some(f => !catalog.files.includes(f))) throw new Error('Select valid test files.');
@@ -40,7 +44,7 @@ function validate(value, catalog) {
   new RegExp(value.grep);
   if (!Number.isInteger(value.workers) || value.workers < 1 || value.workers > 16) throw new Error('Workers must be between 1 and 16.');
   if (!Number.isInteger(value.retries) || value.retries < 0 || value.retries > 3) throw new Error('Retries must be between 0 and 3.');
-  return { name: value.name.trim(), files: value.files, projects: value.projects, baseURL: url.href, grep: value.grep, workers: value.workers, retries: value.retries };
+  return { name: value.name.trim(), tags: validateTags(value.tags), files: value.files, projects: value.projects, baseURL: url.href, grep: value.grep, workers: value.workers, retries: value.retries };
 }
 function runDir(id) { if (!/^[a-f0-9-]{36}$/.test(id)) throw new Error('Invalid run ID.'); return path.join(data, 'runs', id); }
 function getRun(id) {
@@ -68,6 +72,7 @@ async function start(definition) {
   child.on('error', error => { launchError = error.message; log.write(error.message); });
   child.on('close', code => {
     log.end();
+    run.definition = read(path.join(dir, 'run.json'), run).definition;
     const results = read(path.join(dir, 'results.json'), {});
     Object.assign(run, { status: code === 0 && results.status === 'passed' ? 'passed' : 'failed', endedAt: new Date().toISOString(), durationMs: Math.round(performance.now() - started), exitCode: code, launchError });
     write(path.join(dir, 'run.json'), run); active = undefined;
@@ -110,6 +115,32 @@ const server = http.createServer(async (req, res) => {
     }
     if (req.method === 'GET' && route === '/api/runs') return send(200, fs.readdirSync(path.join(data, 'runs')).map(getRun).filter(Boolean).sort((a,b) => b.startedAt.localeCompare(a.startedAt)));
     const match = route.match(/^\/api\/runs\/([a-f0-9-]+)(\/log)?$/);
+    if (req.method === 'DELETE' && match && !match[2]) {
+      const run = getRun(match[1]);
+      if (!run) return send(404, { error: 'Run not found.' });
+      if (active === run.id || run.status === 'running') return send(409, { error: 'Wait for this run to finish before deleting it.' });
+      const dir = path.resolve(runDir(match[1]));
+      const runsRoot = path.resolve(data, 'runs');
+      if (path.dirname(dir) !== runsRoot || fs.lstatSync(dir).isSymbolicLink()) throw new Error('Invalid run directory.');
+      fs.rmSync(dir, { recursive: true, force: true });
+      return send(200, { deleted: true });
+    }
+    if (req.method === 'PATCH' && match && !match[2]) {
+      const run = getRun(match[1]);
+      if (!run) return send(404, { error: 'Run not found.' });
+      let body = '';
+      for await (const chunk of req) { body += chunk; if (body.length > 16000) return send(413, { error: 'Request too large.' }); }
+      const value = JSON.parse(body);
+      if (!value || (value.tags === undefined && value.name === undefined)) throw new Error('Provide a name or tags for this run.');
+      if (value.name !== undefined && (typeof value.name !== 'string' || !value.name.trim() || value.name.length > 100)) throw new Error('Enter a run name (up to 100 characters).');
+      const tags = value.tags === undefined ? undefined : validateTags(value.tags);
+      // Read again after receiving the body so a finishing run keeps its final status.
+      const file = path.join(runDir(match[1]), 'run.json'), current = read(file, null);
+      if (!current) return send(404, { error: 'Run not found.' });
+      if (tags !== undefined) current.definition.tags = tags;
+      if (value.name !== undefined) current.definition.name = value.name.trim();
+      write(file, current); return send(200, getRun(match[1]));
+    }
     if (req.method === 'GET' && match) {
       const run = getRun(match[1]);
       if (!run) return send(404, { error: 'Run not found.' });

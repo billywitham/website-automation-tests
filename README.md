@@ -19,6 +19,16 @@ Run `npm run dashboard`, then open **http://127.0.0.1:3100**.
 Define a run with a name, target URL, test files, browser projects, worker count,
 retries, and an optional test-name regular expression (such as `@smoke`). Save
 definitions to reuse them, or execute directly. One run executes at a time.
+Add comma-separated run tags such as `release:2.4.0, staging` to record the
+version or environment tested (up to 20 tags, 100 characters each). Tags are
+saved with definitions and copied into each run. Filter history by a tag, or
+select a past or running run and use **Save tags** to update its tags. Editing
+a run's tags does not change its saved definition or other runs. Run tags are
+separate from the Playwright test-name filter such as `@smoke`.
+Select a run in history to add or remove tags, **Rename run**, or **Delete run**.
+Deleting requires confirmation and permanently removes that run's results,
+report, logs, and artifacts. Running tests must finish before their run can be
+deleted. Renaming a run leaves its saved definition and other runs unchanged.
 Select a saved definition to rename or delete it using the buttons beneath the
 dropdown. Deleting a definition keeps the results of previous runs.
 
