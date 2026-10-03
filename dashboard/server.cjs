@@ -90,6 +90,24 @@ const server = http.createServer(async (req, res) => {
     const url = new URL(req.url, `http://${req.headers.host}`), route = url.pathname;
     if (req.method === 'GET' && route === '/api/catalog') return send(200, await discover());
     if (req.method === 'GET' && route === '/api/definitions') return send(200, read(path.join(data, 'definitions.json'), []));
+    const definitionMatch = route.match(/^\/api\/definitions\/([a-f0-9-]{36})$/);
+    if (definitionMatch && ['PATCH', 'DELETE'].includes(req.method)) {
+      let name;
+      if (req.method === 'PATCH') {
+        let body = '';
+        for await (const chunk of req) { body += chunk; if (body.length > 16000) return send(413, { error: 'Request too large.' }); }
+        name = JSON.parse(body)?.name;
+        if (typeof name !== 'string' || !name.trim() || name.length > 100) return send(400, { error: 'Enter a definition name (up to 100 characters).' });
+      }
+      const file = path.join(data, 'definitions.json');
+      const saved = read(file, []);
+      const index = saved.findIndex(d => d.id === definitionMatch[1]);
+      if (index === -1) return send(404, { error: 'Saved definition not found.' });
+      if (req.method === 'DELETE') {
+        saved.splice(index, 1); write(file, saved); return send(200, { deleted: true });
+      }
+      saved[index].name = name.trim(); write(file, saved); return send(200, saved[index]);
+    }
     if (req.method === 'GET' && route === '/api/runs') return send(200, fs.readdirSync(path.join(data, 'runs')).map(getRun).filter(Boolean).sort((a,b) => b.startedAt.localeCompare(a.startedAt)));
     const match = route.match(/^\/api\/runs\/([a-f0-9-]+)(\/log)?$/);
     if (req.method === 'GET' && match) {

@@ -5,6 +5,7 @@
 <div id="notice" role="status" aria-live="polite"></div>
 <section class="metrics" id="metrics"></section>
 <div class="layout"><section class="panel"><h2>Define a test run</h2><label>Saved definitions<select id="saved"><option value="">New definition</option></select></label>
+<div class="actions" style="margin-bottom:18px"><button class="secondary" id="rename-definition" type="button" disabled>Rename</button><button class="secondary" id="delete-definition" type="button" disabled>Delete</button></div>
 <form id="run-form"><label>Run name<input id="name" required maxlength="100" placeholder="e.g. Desktop smoke check"></label><label>Target URL<input id="baseURL" type="url" required></label>
 <fieldset><legend>Test files</legend><div id="files">Loading tests…</div></fieldset><fieldset><legend>Browser projects</legend><div id="projects"></div></fieldset>
 <label>Test name filter <span class="hint">optional regular expression, e.g. @smoke</span><input id="grep" maxlength="200" placeholder="Run all tests in selected files"></label>

@@ -2,3 +2,8 @@
 [1002/200351.492:WARNING:net\spdy\spdy_session.cc:3188] Received HEADERS for invalid stream 65
 [1002/200358.012:WARNING:net\spdy\spdy_session.cc:3188] Received HEADERS for invalid stream 141
 [1002/200358.022:WARNING:net\spdy\spdy_session.cc:3188] Received HEADERS for invalid stream 143
+[1002/210309.881:WARNING:net\spdy\spdy_session.cc:3188] Received HEADERS for invalid stream 71
+[1002/210309.882:WARNING:net\spdy\spdy_session.cc:3188] Received HEADERS for invalid stream 69
+[1002/210319.713:WARNING:net\spdy\spdy_session.cc:3188] Received HEADERS for invalid stream 97
+[1002/210319.723:WARNING:net\spdy\spdy_session.cc:3188] Received HEADERS for invalid stream 99
+[1002/210323.691:WARNING:net\spdy\spdy_session.cc:3188] Received HEADERS for invalid stream 101

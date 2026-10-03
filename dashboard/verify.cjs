@@ -26,8 +26,8 @@ test.skip('skips', async () => {});
   async function stop() { if (child && child.exitCode === null) { const closed = new Promise(r => child.once('exit', r)); child.kill(); await closed; } }
   try {
     let base = await launch();
-    const api = async (route, body, origin = base) => {
-      const response = await fetch(base + route, body ? { method:'POST', headers:{ 'Content-Type':'application/json', Origin:origin }, body:JSON.stringify(body) } : {});
+    const api = async (route, body, origin = base, method = body ? 'POST' : 'GET') => {
+      const response = await fetch(base + route, { method, headers:{ 'Content-Type':'application/json', Origin:origin }, ...(body ? { body:JSON.stringify(body) } : {}) });
       return { status:response.status, body:await response.json() };
     };
     const catalog = (await api('/api/catalog')).body;
@@ -35,7 +35,14 @@ test.skip('skips', async () => {});
     const definition = { name:'Verification run', files:['tests/dashboard-verification.spec.ts'], projects:[catalog.projects[0]], baseURL:'http://localhost:12345', workers:1, retries:1, grep:'' };
     assert.equal((await api('/api/runs', definition, 'https://example.com')).status, 403);
     assert.equal((await api('/api/runs', { ...definition, files:['../secret'] })).status, 400);
-    assert.equal((await api('/api/definitions', definition)).status, 201);
+    const saved = await api('/api/definitions', definition);
+    assert.equal(saved.status, 201);
+    const definitionRoute = `/api/definitions/${saved.body.id}`;
+    assert.equal((await api(definitionRoute, { name:' ' }, base, 'PATCH')).status, 400);
+    assert.equal((await api(definitionRoute, { name:'Blocked' }, 'https://example.com', 'PATCH')).status, 403);
+    assert.equal((await api(definitionRoute, { name:'  Renamed run  ' }, base, 'PATCH')).body.name, 'Renamed run');
+    const renamed = (await api('/api/definitions')).body[0];
+    assert.deepEqual(renamed, { ...saved.body, name:'Renamed run' });
     const created = await api('/api/runs', definition); assert.equal(created.status, 201);
     assert.equal((await api('/api/runs', definition)).status, 400);
     let run;
@@ -55,6 +62,13 @@ test.skip('skips', async () => {});
     await stop(); base = await launch();
     assert.equal((await api('/api/runs')).body[0].id, run.id);
     assert.equal((await api('/api/definitions')).body.length, 1);
+    assert.equal((await api('/api/definitions')).body[0].name, 'Renamed run');
+    assert.equal((await api(definitionRoute, undefined, 'https://example.com', 'DELETE')).status, 403);
+    assert.equal((await api(definitionRoute, undefined, base, 'DELETE')).status, 200);
+    assert.equal((await api(definitionRoute, undefined, base, 'DELETE')).status, 404);
+    await stop(); base = await launch();
+    assert.deepEqual((await api('/api/definitions')).body, []);
+    assert.equal((await api(`/api/runs/${run.id}`)).body.definition.name, definition.name);
     const passed = await api('/api/runs', { ...definition, grep:'passes' });
     for (let i = 0; i < 100; i++) { run = (await api(`/api/runs/${passed.body.id}`)).body; if (run.status !== 'running') break; await delay(300); }
     assert.equal(run.status, 'passed'); assert.equal(run.results.tests.length, 1);

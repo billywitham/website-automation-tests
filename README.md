@@ -19,6 +19,8 @@ Run `npm run dashboard`, then open **http://127.0.0.1:3100**.
 Define a run with a name, target URL, test files, browser projects, worker count,
 retries, and an optional test-name regular expression (such as `@smoke`). Save
 definitions to reuse them, or execute directly. One run executes at a time.
+Select a saved definition to rename or delete it using the buttons beneath the
+dropdown. Deleting a definition keeps the results of previous runs.
 
 The dashboard updates automatically with execution logs, pass/fail/skip counts,
 total elapsed run time, individual attempt durations, and error details. Each run
@@ -50,7 +52,7 @@ You can also set the target inline: `BASE_URL=https://staging.your-website.com n
 
 - `tests/smoke.spec.ts` checks that each page in the list loads with a status below 400, has a title and throws no uncaught JavaScript errors. Add your key routes to the `pages` array.
 - `tests/links.spec.ts` flags any internal link on the homepage that returns 4xx or 5xx.
-- `tests/property-record.spec.ts` checks navigation to the tax and assessor search pages, then searches an assessor parcel and opens its assessment and tax information. Set `TEST_PARCEL_NUMBER` in `.env` to enable the account lookup; the value should be the complete parcel/APN without dashes. The lookup test is skipped when it is unset.
+- `tests/property-record.spec.ts` adapts navigation and assessor search to Sutter, Solano, or Snohomish based on `BASE_URL`. It checks configured parcel numbers, verifies assessment/value and tax information (Snohomish shows tax data on its property account summary), and checks partial address searches return property records. Set `TEST_PARCEL_NUMBERS_<COUNTY>` and/or `TEST_PROPERTY_ADDRESS_SEARCHES_<COUNTY>` to comma- or newline-separated values, e.g. `TEST_PARCEL_NUMBERS_SNOHOMISH=00434400100101` and `TEST_PROPERTY_ADDRESS_SEARCHES_SNOHOMISH=MAIN,RIVER`. Snohomish real-property parcels use 14 digits (personal property uses 7). Singular `TEST_PARCEL_NUMBER_<COUNTY>` plus shared `TEST_PARCEL_NUMBERS` / `TEST_PARCEL_NUMBER` and `TEST_PROPERTY_ADDRESS_SEARCHES` variables are supported as fallbacks. Parcel and address tests are skipped when their applicable values are unset.
 - `tests/login.spec.ts` and `pages/LoginPage.ts` show the Page Object pattern. The login tests are skipped until `TEST_USER_EMAIL` is set. Adjust the locators to match your login form.
 - `.github/workflows/playwright.yml` runs the suite on every push and pull request, plus once a day. In the repo settings, set a `BASE_URL` Actions variable, and add `TEST_USER_EMAIL` and `TEST_USER_PASSWORD` secrets if you use the login tests.
 

@@ -2,8 +2,8 @@ const $ = id => document.getElementById(id);
 let definitions = [], runs = [], selected, busy = false;
 const duration = ms => ms == null ? 'Unavailable' : ms < 1000 ? `${ms} ms` : ms < 60000 ? `${(ms / 1000).toFixed(1)} s` : `${Math.floor(ms / 60000)}m ${Math.floor(ms % 60000 / 1000)}s`;
 const escape = value => String(value ?? '').replace(/[&<>"']/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c]));
-async function api(route, value) {
-  const response = await fetch(`/api/${route}`, value ? { method:'POST', headers:{ 'Content-Type':'application/json' }, body:JSON.stringify(value) } : {});
+async function api(route, value, method = value ? 'POST' : 'GET') {
+  const response = await fetch(`/api/${route}`, { method, ...(value ? { headers:{ 'Content-Type':'application/json' }, body:JSON.stringify(value) } : {}) });
   const result = await response.json(); if (!response.ok) throw new Error(result.error); return result;
 }
 function notice(message) { $('notice').textContent = message; }
@@ -45,15 +45,42 @@ async function refresh() {
   if (selected) { const result = await api(`runs/${selected}/log`); $('log').textContent = result.log; }
 }
 async function loadDefinitions() {
+  const selectedId = $('saved').value;
   definitions = await api('definitions');
   $('saved').innerHTML = '<option value="">New definition</option>' + definitions.map(d => `<option value="${d.id}">${escape(d.name)}</option>`).join('');
+  $('saved').value = definitions.some(d => d.id === selectedId) ? selectedId : '';
+  definitionControls();
 }
-$('saved').addEventListener('change', () => { const d = definitions.find(d => d.id === $('saved').value); if (d) apply(d); });
+let managingDefinition = false;
+function definitionControls() {
+  $('saved').disabled = managingDefinition;
+  for (const id of ['rename-definition','delete-definition']) $(id).disabled = managingDefinition || !$('saved').value;
+}
+$('saved').addEventListener('change', () => { const d = definitions.find(d => d.id === $('saved').value); if (d) apply(d); definitionControls(); });
+$('rename-definition').addEventListener('click', async () => {
+  const saved = definitions.find(d => d.id === $('saved').value); if (!saved) return;
+  const name = window.prompt('New name for this saved definition:', saved.name);
+  if (name === null) return;
+  if (!name.trim() || name.length > 100) { notice('Enter a definition name (up to 100 characters).'); return; }
+  managingDefinition = true; definitionControls();
+  try {
+    const renamed = await api(`definitions/${saved.id}`, { name }, 'PATCH');
+    if ($('name').value === saved.name) $('name').value = renamed.name;
+    await loadDefinitions(); notice('Saved definition renamed.');
+  } catch(e) { notice(e.message); } finally { managingDefinition = false; definitionControls(); }
+});
+$('delete-definition').addEventListener('click', async () => {
+  const saved = definitions.find(d => d.id === $('saved').value); if (!saved) return;
+  if (!window.confirm(`Delete saved definition "${saved.name}"? Previous run results will be kept.`)) return;
+  managingDefinition = true; definitionControls();
+  try { await api(`definitions/${saved.id}`, undefined, 'DELETE'); await loadDefinitions(); notice('Saved definition deleted.'); }
+  catch(e) { notice(e.message); } finally { managingDefinition = false; definitionControls(); }
+});
 $('history').addEventListener('click', async event => { const button = event.target.closest('[data-id]'); if (button) { selected = button.dataset.id; try { await refresh(); $('detail').scrollIntoView({ block:'nearest' }); } catch(e) { notice(e.message); } } });
 $('save').addEventListener('click', async () => {
   if (!$('run-form').reportValidity()) return;
   $('save').disabled = true;
-  try { const saved = await api('definitions', definition()); await loadDefinitions(); $('saved').value = saved.id; notice('Definition saved.'); } catch(e) { notice(e.message); } finally { $('save').disabled = false; }
+  try { const saved = await api('definitions', definition()); await loadDefinitions(); $('saved').value = saved.id; definitionControls(); notice('Definition saved.'); } catch(e) { notice(e.message); } finally { $('save').disabled = false; }
 });
 $('run-form').addEventListener('submit', async event => {
   event.preventDefault(); busy = true; render(); notice('Starting test run…');
