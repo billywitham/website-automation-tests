@@ -1,0 +1,15 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Test dashboard</title><link rel="stylesheet" href="/style.css"></head>
+<body><header><div class="brand">◈ Automation lab</div><span>Local test runner</span></header><main>
+<div class="intro"><p class="eyebrow">HOME / TEST RUNS</p><h1>Your tests. Every run.</h1><p>Define a run, launch your browser tests, and track what happened.</p></div>
+<div id="notice" role="status" aria-live="polite"></div>
+<section class="metrics" id="metrics"></section>
+<div class="layout"><section class="panel"><h2>Define a test run</h2><label>Saved definitions<select id="saved"><option value="">New definition</option></select></label>
+<form id="run-form"><label>Run name<input id="name" required maxlength="100" placeholder="e.g. Desktop smoke check"></label><label>Target URL<input id="baseURL" type="url" required></label>
+<fieldset><legend>Test files</legend><div id="files">Loading tests…</div></fieldset><fieldset><legend>Browser projects</legend><div id="projects"></div></fieldset>
+<label>Test name filter <span class="hint">optional regular expression, e.g. @smoke</span><input id="grep" maxlength="200" placeholder="Run all tests in selected files"></label>
+<div class="fields"><label>Workers<input id="workers" type="number" min="1" max="16" value="2" required></label><label>Retries<input id="retries" type="number" min="0" max="3" value="0" required></label></div>
+<div class="actions"><button id="execute" disabled type="submit">▶ Execute run</button><button class="secondary" id="save" disabled type="button">Save definition</button></div></form></section>
+<section class="panel history"><div class="section-title"><h2>Run history</h2><span id="run-count"></span></div><div id="history">No runs yet. Your first run will appear here.</div></section></div>
+<section class="panel detail" id="detail" hidden><div class="section-title"><h2 id="detail-title"></h2><a id="report" target="_blank" rel="noopener" hidden>Open Playwright report ↗</a></div><p id="detail-meta"></p><div class="table-wrap"><table><thead><tr><th>Test / project</th><th>Status</th><th>Duration</th><th>Attempt</th></tr></thead><tbody id="results"></tbody></table></div><div id="errors"></div><details><summary>Execution log</summary><pre id="log"></pre></details></section>
+</main><script src="/app.js"></script></body></html>

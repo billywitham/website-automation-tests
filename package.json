@@ -4,6 +4,8 @@
   "private": true,
   "description": "End-to-end automation tests for the website, built on Playwright.",
   "scripts": {
+    "dashboard": "node dashboard/server.cjs",
+    "dashboard:verify": "node --test dashboard/verify.cjs",
     "test": "playwright test",
     "test:headed": "playwright test --headed",
     "test:ui": "playwright test --ui",
